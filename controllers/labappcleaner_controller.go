@@ -38,7 +38,7 @@ type LabappCleanerReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// generate rbac to get, list, watch, create, update and patch the labappcleaner status the nencached resource
+// generate rbac to get, list, watch, create, update and patch the labappcleaner status the labappcleaners resource
 // +kubebuilder:rbac:groups=cache.example.com,resources=labappcleaners,verbs=get;list;watch;create;update;patch;delete
 
 // generate rbac to get, update and patch the labappcleaner status the labappcleaner/finalizers
