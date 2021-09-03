@@ -28,7 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cachev1alpha1 "github.com/example/memcached-operator/api/v1alpha1"
+	cachev1alpha1 "github.com/pkoska-corona/labappcleaner-operator/api/v1"
 )
 
 // MemcachedReconciler reconciles a Memcached object
@@ -38,14 +38,14 @@ type MemcachedReconciler struct {
 	Scheme *runtime.Scheme
 }
 
-// generate rbac to get, list, watch, create, update and patch the memcached status the nencached resource
-// +kubebuilder:rbac:groups=cache.example.com,resources=memcacheds,verbs=get;list;watch;create;update;patch;delete
+// generate rbac to get, list, watch, create, update and patch the labappcleaner status the nencached resource
+// +kubebuilder:rbac:groups=cache.example.com,resources=labappcleaners,verbs=get;list;watch;create;update;patch;delete
 
-// generate rbac to get, update and patch the memcached status the memcached/finalizers
-// +kubebuilder:rbac:groups=cache.example.com,resources=memcacheds/status,verbs=get;update;patch
+// generate rbac to get, update and patch the labappcleaner status the labappcleaner/finalizers
+// +kubebuilder:rbac:groups=cache.example.com,resources=labappcleaners/status,verbs=get;update;patch
 
-// generate rbac to update the memcached/finalizers
-// +kubebuilder:rbac:groups=cache.example.com,resources=memcacheds/finalizers,verbs=update
+// generate rbac to update the labappcleaner/finalizers
+// +kubebuilder:rbac:groups=cache.example.com,resources=labappcleaners/finalizers,verbs=update
 
 // generate rbac to get, list, watch, create, update, patch, and delete deployments
 // +kubebuilder:rbac:groups=apps,resources=deployments,verbs=get;list;watch;create;update;patch;delete
@@ -63,11 +63,11 @@ type MemcachedReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.0/pkg/reconcile
 func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	log := r.Log.WithValues("memcached", req.NamespacedName)
+	log := r.Log.WithValues("labappcleaner", req.NamespacedName)
 
 	// Fetch the Memcached instance
-	memcached := &cachev1alpha1.Memcached{}
-	err := r.Get(ctx, req.NamespacedName, memcached)
+	labappcleaner := &cachev1alpha1.Memcached{}
+	err := r.Get(ctx, req.NamespacedName, labappcleaner)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
@@ -86,7 +86,7 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	err = r.Get(ctx, req.NamespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new deployment
-		dep := r.deploymentForMemcached(memcached)
+		dep := r.deploymentForMemcached(labappcleaner)
 		log.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 		err = r.Create(ctx, dep)
 		if err != nil {
@@ -101,7 +101,7 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// Ensure the deployment size is the same as the spec
-	size := memcached.Spec.Size
+	size := labappcleaner.Spec.Size
 	if *found.Spec.Replicas != size {
 		found.Spec.Replicas = &size
 		err = r.Update(ctx, found)
@@ -114,22 +114,22 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// Update the Memcached status with the pod names
-	// List the pods for this memcached's deployment
+	// List the pods for this labappcleaner's deployment
 	podList := &corev1.PodList{}
 	listOpts := []client.ListOption{
-		client.InNamespace(memcached.Namespace),
-		client.MatchingLabels(labelsForMemcached(memcached.Name)),
+		client.InNamespace(labappcleaner.Namespace),
+		client.MatchingLabels(labelsForMemcached(labappcleaner.Name)),
 	}
 	if err = r.List(ctx, podList, listOpts...); err != nil {
-		log.Error(err, "Failed to list pods", "Memcached.Namespace", memcached.Namespace, "Memcached.Name", memcached.Name)
+		log.Error(err, "Failed to list pods", "Memcached.Namespace", labappcleaner.Namespace, "Memcached.Name", labappcleaner.Name)
 		return ctrl.Result{}, err
 	}
 	podNames := getPodNames(podList.Items)
 
 	// Update status.Nodes if needed
-	if !reflect.DeepEqual(podNames, memcached.Status.Nodes) {
-		memcached.Status.Nodes = podNames
-		err := r.Status().Update(ctx, memcached)
+	if !reflect.DeepEqual(podNames, labappcleaner.Status.Nodes) {
+		labappcleaner.Status.Nodes = podNames
+		err := r.Status().Update(ctx, labappcleaner)
 		if err != nil {
 			log.Error(err, "Failed to update Memcached status")
 			return ctrl.Result{}, err
@@ -139,7 +139,7 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
-// deploymentForMemcached returns a memcached Deployment object
+// deploymentForMemcached returns a labappcleaner Deployment object
 func (r *MemcachedReconciler) deploymentForMemcached(m *cachev1alpha1.Memcached) *appsv1.Deployment {
 	ls := labelsForMemcached(m.Name)
 	replicas := m.Spec.Size
@@ -161,11 +161,11 @@ func (r *MemcachedReconciler) deploymentForMemcached(m *cachev1alpha1.Memcached)
 				Spec: corev1.PodSpec{
 					Containers: []corev1.Container{{
 						Image:   "memcached:1.4.36-alpine",
-						Name:    "memcached",
+						Name:    "labappcleaner",
 						Command: []string{"memcached", "-m=64", "-o", "modern", "-v"},
 						Ports: []corev1.ContainerPort{{
 							ContainerPort: 11211,
-							Name:          "memcached",
+							Name:          "labappcleaner",
 						}},
 					}},
 				},
@@ -178,9 +178,9 @@ func (r *MemcachedReconciler) deploymentForMemcached(m *cachev1alpha1.Memcached)
 }
 
 // labelsForMemcached returns the labels for selecting the resources
-// belonging to the given memcached CR name.
+// belonging to the given labappcleaner CR name.
 func labelsForMemcached(name string) map[string]string {
-	return map[string]string{"app": "memcached", "memcached_cr": name}
+	return map[string]string{"app": "labappcleaner", "labappcleaner_cr": name}
 }
 
 // getPodNames returns the pod names of the array of pods passed in
