@@ -1,0 +1,7 @@
+apiVersion: cleaner.example.com/v1
+kind: LabappCleaner
+metadata:
+  name: labappcleaner-sample
+spec:
+  # Add fields here
+  foo: bar

@@ -1,0 +1,24 @@
+# permissions for end users to edit labappcleaners.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: labappcleaner-editor-role
+rules:
+- apiGroups:
+  - cleaner.example.com
+  resources:
+  - labappcleaners
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - cleaner.example.com
+  resources:
+  - labappcleaners/status
+  verbs:
+  - get

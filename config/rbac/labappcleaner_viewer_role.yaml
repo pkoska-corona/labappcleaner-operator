@@ -1,0 +1,20 @@
+# permissions for end users to view labappcleaners.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: labappcleaner-viewer-role
+rules:
+- apiGroups:
+  - cleaner.example.com
+  resources:
+  - labappcleaners
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - cleaner.example.com
+  resources:
+  - labappcleaners/status
+  verbs:
+  - get
