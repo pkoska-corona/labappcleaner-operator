@@ -31,8 +31,8 @@ import (
 	cachev1alpha1 "github.com/pkoska-corona/labappcleaner-operator/api/v1"
 )
 
-// MemcachedReconciler reconciles a Memcached object
-type MemcachedReconciler struct {
+// LabappCleanerReconciler reconciles a LabappCleaner object
+type LabappCleanerReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
@@ -56,28 +56,28 @@ type MemcachedReconciler struct {
 // Reconcile is part of the main kubernetes reconciliation loop which aims to
 // move the current state of the cluster closer to the desired state.
 // TODO(user): Modify the Reconcile function to compare the state specified by
-// the Memcached object against the actual cluster state, and then
+// the LabappCleaner object against the actual cluster state, and then
 // perform operations to make the cluster state reflect the state specified by
 // the user.
 //
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.7.0/pkg/reconcile
-func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *LabappCleanerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("labappcleaner", req.NamespacedName)
 
-	// Fetch the Memcached instance
-	labappcleaner := &cachev1alpha1.Memcached{}
+	// Fetch the LabappCleaner instance
+	labappcleaner := &cachev1alpha1.LabappCleaner{}
 	err := r.Get(ctx, req.NamespacedName, labappcleaner)
 	if err != nil {
 		if errors.IsNotFound(err) {
 			// Request object not found, could have been deleted after reconcile request.
 			// Owned objects are automatically garbage collected. For additional cleanup logic use finalizers.
 			// Return and don't requeue
-			log.Info("Memcached resource not found. Ignoring since object must be deleted")
+			log.Info("LabappCleaner resource not found. Ignoring since object must be deleted")
 			return ctrl.Result{}, nil
 		}
 		// Error reading the object - requeue the request.
-		log.Error(err, "Failed to get Memcached")
+		log.Error(err, "Failed to get LabappCleaner")
 		return ctrl.Result{}, err
 	}
 
@@ -86,7 +86,7 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	err = r.Get(ctx, req.NamespacedName, found)
 	if err != nil && errors.IsNotFound(err) {
 		// Define a new deployment
-		dep := r.deploymentForMemcached(labappcleaner)
+		dep := r.deploymentForLabappCleaner(labappcleaner)
 		log.Info("Creating a new Deployment", "Deployment.Namespace", dep.Namespace, "Deployment.Name", dep.Name)
 		err = r.Create(ctx, dep)
 		if err != nil {
@@ -101,7 +101,7 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	// Ensure the deployment size is the same as the spec
-	size := labappcleaner.Spec.Size
+	size := labappcleaner.Spec.Count
 	if *found.Spec.Replicas != size {
 		found.Spec.Replicas = &size
 		err = r.Update(ctx, found)
@@ -113,15 +113,15 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		return ctrl.Result{Requeue: true}, nil
 	}
 
-	// Update the Memcached status with the pod names
+	// Update the LabappCleaner status with the pod names
 	// List the pods for this labappcleaner's deployment
 	podList := &corev1.PodList{}
 	listOpts := []client.ListOption{
 		client.InNamespace(labappcleaner.Namespace),
-		client.MatchingLabels(labelsForMemcached(labappcleaner.Name)),
+		client.MatchingLabels(labelsForLabappCleaner(labappcleaner.Name)),
 	}
 	if err = r.List(ctx, podList, listOpts...); err != nil {
-		log.Error(err, "Failed to list pods", "Memcached.Namespace", labappcleaner.Namespace, "Memcached.Name", labappcleaner.Name)
+		log.Error(err, "Failed to list pods", "LabappCleaner.Namespace", labappcleaner.Namespace, "LabappCleaner.Name", labappcleaner.Name)
 		return ctrl.Result{}, err
 	}
 	podNames := getPodNames(podList.Items)
@@ -131,7 +131,7 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 		labappcleaner.Status.Nodes = podNames
 		err := r.Status().Update(ctx, labappcleaner)
 		if err != nil {
-			log.Error(err, "Failed to update Memcached status")
+			log.Error(err, "Failed to update LabappCleaner status")
 			return ctrl.Result{}, err
 		}
 	}
@@ -139,10 +139,10 @@ func (r *MemcachedReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
-// deploymentForMemcached returns a labappcleaner Deployment object
-func (r *MemcachedReconciler) deploymentForMemcached(m *cachev1alpha1.Memcached) *appsv1.Deployment {
-	ls := labelsForMemcached(m.Name)
-	replicas := m.Spec.Size
+// deploymentForLabappCleaner returns a labappcleaner Deployment object
+func (r *LabappCleanerReconciler) deploymentForLabappCleaner(m *cachev1alpha1.LabappCleaner) *appsv1.Deployment {
+	ls := labelsForLabappCleaner(m.Name)
+	replicas := m.Spec.Count
 
 	dep := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
@@ -172,14 +172,14 @@ func (r *MemcachedReconciler) deploymentForMemcached(m *cachev1alpha1.Memcached)
 			},
 		},
 	}
-	// Set Memcached instance as the owner and controller
+	// Set LabappCleaner instance as the owner and controller
 	ctrl.SetControllerReference(m, dep, r.Scheme)
 	return dep
 }
 
-// labelsForMemcached returns the labels for selecting the resources
+// labelsForLabappCleaner returns the labels for selecting the resources
 // belonging to the given labappcleaner CR name.
-func labelsForMemcached(name string) map[string]string {
+func labelsForLabappCleaner(name string) map[string]string {
 	return map[string]string{"app": "labappcleaner", "labappcleaner_cr": name}
 }
 
@@ -193,9 +193,9 @@ func getPodNames(pods []corev1.Pod) []string {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *MemcachedReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *LabappCleanerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&cachev1alpha1.Memcached{}).
+		For(&cachev1alpha1.LabappCleaner{}).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }
