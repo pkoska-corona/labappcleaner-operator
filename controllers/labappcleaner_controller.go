@@ -28,7 +28,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	cachev1alpha1 "github.com/pkoska-corona/labappcleaner-operator/api/v1"
+	labv1 "github.com/pkoska-corona/labappcleaner-operator/api/v1"
 )
 
 // LabappCleanerReconciler reconciles a LabappCleaner object
@@ -66,7 +66,7 @@ func (r *LabappCleanerReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 	log := r.Log.WithValues("labappcleaner", req.NamespacedName)
 
 	// Fetch the LabappCleaner instance
-	labappcleaner := &cachev1alpha1.LabappCleaner{}
+	labappcleaner := &labv1.LabappCleaner{}
 	err := r.Get(ctx, req.NamespacedName, labappcleaner)
 	if err != nil {
 		if errors.IsNotFound(err) {
@@ -140,7 +140,7 @@ func (r *LabappCleanerReconciler) Reconcile(ctx context.Context, req ctrl.Reques
 }
 
 // deploymentForLabappCleaner returns a labappcleaner Deployment object
-func (r *LabappCleanerReconciler) deploymentForLabappCleaner(m *cachev1alpha1.LabappCleaner) *appsv1.Deployment {
+func (r *LabappCleanerReconciler) deploymentForLabappCleaner(m *labv1.LabappCleaner) *appsv1.Deployment {
 	ls := labelsForLabappCleaner(m.Name)
 	replicas := m.Spec.Count
 
@@ -195,7 +195,7 @@ func getPodNames(pods []corev1.Pod) []string {
 // SetupWithManager sets up the controller with the Manager.
 func (r *LabappCleanerReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&cachev1alpha1.LabappCleaner{}).
+		For(&labv1.LabappCleaner{}).
 		Owns(&appsv1.Deployment{}).
 		Complete(r)
 }

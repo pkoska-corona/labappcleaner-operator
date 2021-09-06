@@ -31,7 +31,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	cleanerv1 "github.com/pkoska-corona/labappcleaner-operator/api/v1"
+	labv1 "github.com/pkoska-corona/labappcleaner-operator/api/v1"
 	"github.com/pkoska-corona/labappcleaner-operator/controllers"
 	//+kubebuilder:scaffold:imports
 )
@@ -44,7 +44,7 @@ var (
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
-	utilruntime.Must(cleanerv1.AddToScheme(scheme))
+	utilruntime.Must(labv1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
